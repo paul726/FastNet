@@ -2,11 +2,6 @@ import Foundation
 import Network
 import os
 
-enum ProxyMode: String, CaseIterable {
-    case listen = "Listen"
-    case tunnel = "Tunnel"
-}
-
 class SOCKS5Server: ObservableObject {
     private var listener: NWListener?
     private var connections: [UUID: SOCKS5Connection] = [:]
@@ -15,21 +10,13 @@ class SOCKS5Server: ObservableObject {
     private var statsTimer: Timer?
     private var pendingBytes: Int64 = 0
     private let bytesLock = NSLock()
-
-    private var tunnelMacIP: String = ""
-    private var tunnelPort: UInt16 = 1083
-    private var tunnelPoolSize = 8
-    private var tunnelActive = false
-    private var activeTunnelCount = 0
     private var internalTotal = 0
-    private var internalPool = 0
 
     @Published var isRunning = false
     @Published var activeConnections = 0
     @Published var totalConnections = 0
     @Published var totalBytesTransferred: Int64 = 0
     @Published var lastError: String?
-    @Published var poolSize = 0
     @Published var logs: [String] = []
     var loggingEnabled = false
 
@@ -55,9 +42,7 @@ class SOCKS5Server: ObservableObject {
         bytesLock.unlock()
     }
 
-    // MARK: - Listen Mode
-
-    func startListen(port: UInt16 = 1082) {
+    func start(port: UInt16 = 1082) {
         guard !isRunning else { return }
 
         do {
@@ -111,91 +96,7 @@ class SOCKS5Server: ObservableObject {
         conn.start()
     }
 
-    // MARK: - Tunnel Mode
-
-    func startTunnel(macIP: String, tunnelPort: UInt16 = 1083, pool: Int = 8) {
-        guard !isRunning else { return }
-        tunnelMacIP = macIP
-        self.tunnelPort = tunnelPort
-        tunnelPoolSize = pool
-        tunnelActive = true
-
-        log("Tunnel mode → \(macIP):\(tunnelPort) pool=\(pool)")
-        DispatchQueue.main.async { self.isRunning = true }
-        startStatsTimer()
-
-        for _ in 0..<pool {
-            spawnTunnel()
-        }
-    }
-
-    private func spawnTunnel() {
-        queue.async { [self] in
-            guard tunnelActive else { return }
-            guard activeTunnelCount < tunnelPoolSize * 2 else { return }
-            activeTunnelCount += 1
-
-            let tcp = NWProtocolTCP.Options()
-            tcp.noDelay = true
-            tcp.enableFastOpen = true
-            tcp.enableKeepalive = true
-            tcp.keepaliveInterval = 30
-            let params = NWParameters(tls: nil, tcp: tcp)
-
-            guard let port = NWEndpoint.Port(rawValue: tunnelPort) else {
-                activeTunnelCount -= 1
-                return
-            }
-            let conn = NWConnection(to: .hostPort(host: .init(tunnelMacIP), port: port), using: params)
-            var handled = false
-
-            conn.stateUpdateHandler = { [weak self] state in
-                guard let self, self.tunnelActive else { return }
-                switch state {
-                case .ready:
-                    guard !handled else { return }
-                    handled = true
-                    conn.stateUpdateHandler = nil
-                    self.log("Tunnel connected to relay")
-                    self.handleTunnel(conn)
-                case .failed(let err):
-                    self.log("Tunnel connect failed: \(err), retrying...")
-                    self.queue.async { self.activeTunnelCount -= 1 }
-                    DispatchQueue.global().asyncAfter(deadline: .now() + 1) { [weak self] in
-                        self?.spawnTunnel()
-                    }
-                default: break
-                }
-            }
-
-            conn.start(queue: SOCKS5Connection.ioQueue())
-        }
-    }
-
-    private func handleTunnel(_ nwConn: NWConnection) {
-        log("Tunnel ready, waiting for SOCKS client...")
-        let id = UUID()
-        let conn = SOCKS5Connection(
-            connection: nwConn, server: self,
-            onComplete: { [weak self] in
-                guard let self else { return }
-                self.removeConnection(id)
-                self.queue.async {
-                    self.activeTunnelCount -= 1
-                    self.internalPool = max(0, self.internalPool - 1)
-                }
-                self.spawnTunnel()
-            }
-        )
-        queue.async { self.internalPool += 1 }
-        addConnection(id, conn)
-        conn.handleAsClient()
-    }
-
-    // MARK: - Stop
-
     func stop() {
-        tunnelActive = false
         listener?.cancel()
         listener = nil
         DispatchQueue.main.async {
@@ -205,14 +106,11 @@ class SOCKS5Server: ObservableObject {
         queue.async { [self] in
             for conn in connections.values { conn.cancel() }
             connections.removeAll()
-            activeTunnelCount = 0
             internalTotal = 0
-            internalPool = 0
             DispatchQueue.main.async {
                 self.isRunning = false
                 self.activeConnections = 0
                 self.totalConnections = 0
-                self.poolSize = 0
                 self.totalBytesTransferred = 0
             }
         }
@@ -246,12 +144,10 @@ class SOCKS5Server: ObservableObject {
                 self.queue.async {
                     let active = self.connections.count
                     let total = self.internalTotal
-                    let pool = self.internalPool
                     DispatchQueue.main.async {
                         if bytes > 0 { self.totalBytesTransferred += bytes }
                         self.activeConnections = active
                         self.totalConnections = total
-                        self.poolSize = pool
                     }
                 }
             }

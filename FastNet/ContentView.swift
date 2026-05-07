@@ -2,10 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var server = SOCKS5Server()
-    @State private var mode: ProxyMode = .tunnel
     @State private var portText = "1082"
-    @State private var macIP = "192.0.0.2"
-    @State private var tunnelPortText = "1083"
     @State private var loggingEnabled = false
 
     var body: some View {
@@ -36,9 +33,7 @@ struct ContentView: View {
                     .fill(server.isRunning ? .green : .gray)
                     .frame(width: 12, height: 12)
                 if server.isRunning {
-                    Text(mode == .listen
-                         ? "Listening on port \(portText)"
-                         : "Tunnel → \(macIP):\(tunnelPortText)")
+                    Text("Listening on port \(portText)")
                         .font(.headline)
                 } else {
                     Text("Stopped")
@@ -50,58 +45,25 @@ struct ContentView: View {
 
     private var settingsSection: some View {
         Section("Settings") {
-            Picker("Mode", selection: $mode) {
-                ForEach(ProxyMode.allCases, id: \.self) { m in
-                    Text(m.rawValue).tag(m)
-                }
+            HStack {
+                Text("Port")
+                Spacer()
+                TextField("1082", text: $portText)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 80)
             }
-            .pickerStyle(.segmented)
-
-            if mode == .listen {
-                HStack {
-                    Text("Port")
-                    Spacer()
-                    TextField("1082", text: $portText)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 80)
-                }
-                let addrs = NetworkUtils.getGatewayAddresses()
-                if !addrs.isEmpty {
-                    ForEach(addrs, id: \.interface) { a in
-                        HStack {
-                            Text(a.interface)
-                                .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text(a.address)
-                                .font(.system(.body, design: .monospaced))
-                        }
+            let addrs = NetworkUtils.getGatewayAddresses()
+            if !addrs.isEmpty {
+                ForEach(addrs, id: \.interface) { a in
+                    HStack {
+                        Text(a.interface)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(a.address)
+                            .font(.system(.body, design: .monospaced))
                     }
-                }
-            } else {
-                HStack {
-                    Text("Mac IP")
-                    Spacer()
-                    TextField("192.0.0.2", text: $macIP)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 140)
-                }
-                HStack {
-                    Text("Tunnel Port")
-                    Spacer()
-                    TextField("1083", text: $tunnelPortText)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 80)
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Mac side: python3 relay.py")
-                        .font(.system(.caption, design: .monospaced))
-                    Text("Mac proxy: 127.0.0.1:\(portText)")
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -112,9 +74,6 @@ struct ContentView: View {
             LabeledContent("Active", value: "\(server.activeConnections)")
             LabeledContent("Total", value: "\(server.totalConnections)")
             LabeledContent("Transferred", value: formatBytes(server.totalBytesTransferred))
-            if mode == .tunnel {
-                LabeledContent("Pool", value: "\(server.poolSize)")
-            }
         }
     }
 
@@ -166,14 +125,7 @@ struct ContentView: View {
             UIApplication.shared.isIdleTimerDisabled = false
         } else {
             UIApplication.shared.isIdleTimerDisabled = true
-            if mode == .listen {
-                server.startListen(port: UInt16(portText) ?? 1082)
-            } else {
-                server.startTunnel(
-                    macIP: macIP,
-                    tunnelPort: UInt16(tunnelPortText) ?? 1083
-                )
-            }
+            server.start(port: UInt16(portText) ?? 1082)
         }
     }
 

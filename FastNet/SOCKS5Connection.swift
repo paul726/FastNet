@@ -10,7 +10,7 @@ class SOCKS5Connection {
     private static var queueIdx = 0
     private static var _queueLockInit: Void = { queueLock.initialize(to: os_unfair_lock()) }()
 
-    static func ioQueue() -> DispatchQueue {
+    private static func ioQueue() -> DispatchQueue {
         _ = _queueLockInit
         os_unfair_lock_lock(queueLock)
         let q = queues[queueIdx % queues.count]
@@ -43,10 +43,6 @@ class SOCKS5Connection {
 
     func start() {
         client.start(queue: ioQueue)
-        receiveGreeting()
-    }
-
-    func handleAsClient() {
         receiveGreeting()
     }
 
