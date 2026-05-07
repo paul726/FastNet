@@ -1,6 +1,8 @@
 import Foundation
 
 class PortForwarder {
+    fileprivate static let bufferSize = 262_144
+
     private var listenFD: Int32 = -1
     private var acceptSource: DispatchSourceRead?
     private let queue = DispatchQueue(label: "com.fastnet.forwarder")
@@ -38,6 +40,7 @@ class PortForwarder {
     init(deviceID: Int, remotePort: UInt16) {
         self.deviceID = deviceID
         self.remotePort = remotePort
+        signal(SIGPIPE, SIG_IGN)
     }
 
     func start(port: UInt16) -> Bool {
@@ -79,36 +82,39 @@ class PortForwarder {
     }
 
     private func handleClient(_ clientFD: Int32) {
-        var opt: Int32 = 1
-        setsockopt(clientFD, IPPROTO_TCP, TCP_NODELAY, &opt, socklen_t(MemoryLayout<Int32>.size))
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { Darwin.close(clientFD); return }
 
-        let deviceFD = USBMux.shared.connect(deviceID: deviceID, port: remotePort)
-        guard deviceFD >= 0 else {
-            Darwin.close(clientFD)
-            return
+            let deviceFD = USBMux.shared.connect(deviceID: self.deviceID, port: self.remotePort)
+            guard deviceFD >= 0 else {
+                Darwin.close(clientFD)
+                return
+            }
+
+            configureTunnel(clientFD)
+            configureTunnel(deviceFD)
+
+            let id = UUID()
+            self.statsLock.lock()
+            self._totalConnections += 1
+            self.statsLock.unlock()
+
+            let relay = TunnelRelay(fd1: clientFD, fd2: deviceFD, onBytes: { [weak self] n in
+                self?.statsLock.lock()
+                self?._totalBytes += Int64(n)
+                self?.statsLock.unlock()
+            }, onClose: { [weak self] in
+                self?.relayLock.lock()
+                self?.relays.removeValue(forKey: id)
+                self?.relayLock.unlock()
+            })
+
+            self.relayLock.lock()
+            self.relays[id] = relay
+            self.relayLock.unlock()
+
+            relay.run()
         }
-        setsockopt(deviceFD, IPPROTO_TCP, TCP_NODELAY, &opt, socklen_t(MemoryLayout<Int32>.size))
-
-        let id = UUID()
-        statsLock.lock()
-        _totalConnections += 1
-        statsLock.unlock()
-
-        let relay = TunnelRelay(fd1: clientFD, fd2: deviceFD, onBytes: { [weak self] n in
-            self?.statsLock.lock()
-            self?._totalBytes += Int64(n)
-            self?.statsLock.unlock()
-        }, onClose: { [weak self] in
-            self?.relayLock.lock()
-            self?.relays.removeValue(forKey: id)
-            self?.relayLock.unlock()
-        })
-
-        relayLock.lock()
-        relays[id] = relay
-        relayLock.unlock()
-
-        relay.start()
     }
 
     func stop() {
@@ -121,7 +127,7 @@ class PortForwarder {
         relays.removeAll()
         relayLock.unlock()
 
-        for r in current { r.close() }
+        for r in current { r.interrupt() }
 
         statsLock.lock()
         _totalConnections = 0
@@ -130,13 +136,19 @@ class PortForwarder {
     }
 }
 
+private func configureTunnel(_ fd: Int32) {
+    var opt: Int32 = 1
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &opt, socklen_t(MemoryLayout<Int32>.size))
+    var bufSize: Int32 = 524_288
+    setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &bufSize, socklen_t(MemoryLayout<Int32>.size))
+    setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bufSize, socklen_t(MemoryLayout<Int32>.size))
+}
+
 private class TunnelRelay {
     private let fd1: Int32
     private let fd2: Int32
     private let onBytes: (Int) -> Void
     private let onClose: () -> Void
-    private var didClose = false
-    private let lock = NSLock()
 
     init(fd1: Int32, fd2: Int32, onBytes: @escaping (Int) -> Void, onClose: @escaping () -> Void) {
         self.fd1 = fd1
@@ -145,38 +157,59 @@ private class TunnelRelay {
         self.onClose = onClose
     }
 
-    func start() {
-        DispatchQueue.global(qos: .userInitiated).async { self.pump(from: self.fd1, to: self.fd2) }
-        DispatchQueue.global(qos: .userInitiated).async { self.pump(from: self.fd2, to: self.fd1) }
-    }
+    func run() {
+        let buf = UnsafeMutableRawPointer.allocate(byteCount: PortForwarder.bufferSize, alignment: 1)
+        defer {
+            buf.deallocate()
+            Darwin.close(fd1)
+            Darwin.close(fd2)
+            onClose()
+        }
 
-    private func pump(from src: Int32, to dst: Int32) {
-        let bufSize = 65536
-        let buf = UnsafeMutableRawPointer.allocate(byteCount: bufSize, alignment: 1)
-        defer { buf.deallocate() }
+        var fds = [
+            pollfd(fd: fd1, events: Int16(POLLIN), revents: 0),
+            pollfd(fd: fd2, events: Int16(POLLIN), revents: 0)
+        ]
 
         while true {
-            let n = Darwin.read(src, buf, bufSize)
-            if n <= 0 { break }
-            onBytes(n)
-            var written = 0
-            while written < n {
-                let w = Darwin.write(dst, buf.advanced(by: written), n - written)
-                if w <= 0 { close(); return }
-                written += w
+            fds[0].revents = 0
+            fds[1].revents = 0
+
+            let ready = poll(&fds, 2, -1)
+            if ready < 0 {
+                if errno == EINTR { continue }
+                break
             }
+
+            if fds[0].revents & Int16(POLLIN) != 0 {
+                if !forward(from: fd1, to: fd2, buf: buf) { break }
+            }
+            if fds[1].revents & Int16(POLLIN) != 0 {
+                if !forward(from: fd2, to: fd1, buf: buf) { break }
+            }
+            if fds[0].revents & Int16(POLLHUP | POLLERR | POLLNVAL) != 0 { break }
+            if fds[1].revents & Int16(POLLHUP | POLLERR | POLLNVAL) != 0 { break }
         }
-        close()
     }
 
-    func close() {
-        lock.lock()
-        guard !didClose else { lock.unlock(); return }
-        didClose = true
-        lock.unlock()
+    private func forward(from src: Int32, to dst: Int32, buf: UnsafeMutableRawPointer) -> Bool {
+        let n = Darwin.read(src, buf, PortForwarder.bufferSize)
+        if n <= 0 { return false }
+        onBytes(n)
+        var written = 0
+        while written < n {
+            let w = Darwin.write(dst, buf.advanced(by: written), n - written)
+            if w <= 0 {
+                if errno == EINTR { continue }
+                return false
+            }
+            written += w
+        }
+        return true
+    }
 
-        Darwin.close(fd1)
-        Darwin.close(fd2)
-        onClose()
+    func interrupt() {
+        Darwin.shutdown(fd1, SHUT_RDWR)
+        Darwin.shutdown(fd2, SHUT_RDWR)
     }
 }

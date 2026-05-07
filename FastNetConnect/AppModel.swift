@@ -3,7 +3,6 @@ import Foundation
 class AppModel: ObservableObject {
     @Published var device: USBDevice?
     @Published var isForwarding = false
-    @Published var proxyEnabled = false
     @Published var activeConnections = 0
     @Published var totalConnections = 0
     @Published var totalBytes: Int64 = 0
@@ -44,6 +43,7 @@ class AppModel: ObservableObject {
         forwarder = fw
         isForwarding = true
         error = nil
+        _ = SystemProxy.enable(port: port)
 
         statsTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             guard let self, let fw = self.forwarder else { return }
@@ -62,21 +62,6 @@ class AppModel: ObservableObject {
         activeConnections = 0
         totalConnections = 0
         totalBytes = 0
-
-        if proxyEnabled { toggleProxy() }
-    }
-
-    func toggleProxy() {
-        if proxyEnabled {
-            SystemProxy.disable()
-            proxyEnabled = false
-        } else {
-            let port = UInt16(portText) ?? 1082
-            if SystemProxy.enable(port: port) {
-                proxyEnabled = true
-            } else {
-                error = "Failed to set system proxy"
-            }
-        }
+        SystemProxy.disable()
     }
 }

@@ -19,7 +19,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.fastnet.app
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: true
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
@@ -41,3 +41,5 @@ targets:
         INFOPLIST_KEY_LSUIElement: true
         CODE_SIGN_ENTITLEMENTS: FastNetConnect/FastNetConnect.entitlements
         ENABLE_APP_SANDBOX: false
+        ENABLE_HARDENED_RUNTIME: true
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

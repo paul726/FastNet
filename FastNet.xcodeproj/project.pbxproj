@@ -9,10 +9,13 @@
 /* Begin PBXBuildFile section */
 		05AD96817018B674E6DF613E /* SOCKS5Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49872B86595B92D68DE1C439 /* SOCKS5Server.swift */; };
 		0CFC88B8987E2B11F0040D96 /* PortForwarder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD37288A4D649FA2AA72FFA /* PortForwarder.swift */; };
+		11556E714AA1C17470681F22 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F5825D5520F783F2AE565290 /* PrivacyInfo.xcprivacy */; };
 		33E053B708FEE7CC3EAC5263 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5F33A33C7E215B5C190670A3 /* Assets.xcassets */; };
 		3C793F8CA71A61DEBA9BE769 /* SOCKS5Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7A7BE0EFC5519ED5505A82 /* SOCKS5Connection.swift */; };
 		3D7F0130B85A20527F011459 /* NetworkUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD5789E3A9522069179DED6E /* NetworkUtils.swift */; };
+		7E0C76F61ABCE81C430AEDB8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3EDA1227F42BA0DCE70F70CE /* Assets.xcassets */; };
 		82FE4DEA0CBD26C341607D80 /* USBMux.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D2BD185330B921695274A33 /* USBMux.swift */; };
+		87E2470A367C4B8321339BED /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4CB6A4106C9A931731B25E79 /* PrivacyInfo.xcprivacy */; };
 		A095CBFED8A7E13D2E99F166 /* FastNetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19CA72BAAA7A9C42034812B /* FastNetApp.swift */; };
 		A2F027A683C2BCBAFF37833F /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C673089F029BFCA9F001F8B /* AppModel.swift */; };
 		DFE59526AFD0C34EE49B0D61 /* FastNetConnectApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76E80AD7F64A6D34414B0634 /* FastNetConnectApp.swift */; };
@@ -23,10 +26,12 @@
 /* Begin PBXFileReference section */
 		1D2BD185330B921695274A33 /* USBMux.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBMux.swift; sourceTree = "<group>"; };
 		2C673089F029BFCA9F001F8B /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		3EDA1227F42BA0DCE70F70CE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		40094C40899C77EEFB3B140E /* SystemProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemProxy.swift; sourceTree = "<group>"; };
 		44828F6298A005DE1A70DB45 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		49872B86595B92D68DE1C439 /* SOCKS5Server.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOCKS5Server.swift; sourceTree = "<group>"; };
 		4BD2A56A6E399322C3322B27 /* FastNet.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FastNet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CB6A4106C9A931731B25E79 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		5EAE3718EC124CF6693F1ACC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5F33A33C7E215B5C190670A3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		76E80AD7F64A6D34414B0634 /* FastNetConnectApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastNetConnectApp.swift; sourceTree = "<group>"; };
@@ -35,6 +40,7 @@
 		B2D34BD9E183AA9C987F4BE8 /* FastNetConnect.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FastNetConnect.entitlements; sourceTree = "<group>"; };
 		C19CA72BAAA7A9C42034812B /* FastNetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastNetApp.swift; sourceTree = "<group>"; };
 		DD7A7BE0EFC5519ED5505A82 /* SOCKS5Connection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOCKS5Connection.swift; sourceTree = "<group>"; };
+		F5825D5520F783F2AE565290 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FD5789E3A9522069179DED6E /* NetworkUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkUtils.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -43,9 +49,11 @@
 			isa = PBXGroup;
 			children = (
 				2C673089F029BFCA9F001F8B /* AppModel.swift */,
+				3EDA1227F42BA0DCE70F70CE /* Assets.xcassets */,
 				B2D34BD9E183AA9C987F4BE8 /* FastNetConnect.entitlements */,
 				76E80AD7F64A6D34414B0634 /* FastNetConnectApp.swift */,
 				AAD37288A4D649FA2AA72FFA /* PortForwarder.swift */,
+				F5825D5520F783F2AE565290 /* PrivacyInfo.xcprivacy */,
 				40094C40899C77EEFB3B140E /* SystemProxy.swift */,
 				1D2BD185330B921695274A33 /* USBMux.swift */,
 			);
@@ -60,6 +68,7 @@
 				C19CA72BAAA7A9C42034812B /* FastNetApp.swift */,
 				5EAE3718EC124CF6693F1ACC /* Info.plist */,
 				FD5789E3A9522069179DED6E /* NetworkUtils.swift */,
+				4CB6A4106C9A931731B25E79 /* PrivacyInfo.xcprivacy */,
 				DD7A7BE0EFC5519ED5505A82 /* SOCKS5Connection.swift */,
 				49872B86595B92D68DE1C439 /* SOCKS5Server.swift */,
 			);
@@ -110,6 +119,7 @@
 			buildConfigurationList = A7843C607E5A01478C0882C3 /* Build configuration list for PBXNativeTarget "FastNetConnect" */;
 			buildPhases = (
 				E9166010E331912E7259E6A4 /* Sources */,
+				CFEBED9B4F517D3C17C67774 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -159,6 +169,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				33E053B708FEE7CC3EAC5263 /* Assets.xcassets in Resources */,
+				87E2470A367C4B8321339BED /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CFEBED9B4F517D3C17C67774 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7E0C76F61ABCE81C430AEDB8 /* Assets.xcassets in Resources */,
+				11556E714AA1C17470681F22 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -200,6 +220,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -232,7 +253,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fastnet.app;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -300,6 +321,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -395,7 +417,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fastnet.app;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

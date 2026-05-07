@@ -1,31 +1,32 @@
 import Foundation
 
 enum SystemProxy {
-    static func enable(port: UInt16, service: String = "Wi-Fi") -> Bool {
-        shell("-setsocksfirewallproxy", service, "127.0.0.1", String(port))
-            && shell("-setsocksfirewallproxystate", service, "on")
+    static func enable(port: UInt16) -> Bool {
+        var anyOK = false
+        for svc in allServices() {
+            if shell("-setsocksfirewallproxy", svc, "127.0.0.1", String(port))
+                && shell("-setsocksfirewallproxystate", svc, "on") {
+                anyOK = true
+            }
+        }
+        return anyOK
     }
 
     @discardableResult
-    static func disable(service: String = "Wi-Fi") -> Bool {
-        shell("-setsocksfirewallproxystate", service, "off")
+    static func disable() -> Bool {
+        var anyOK = false
+        for svc in allServices() {
+            if shell("-setsocksfirewallproxystate", svc, "off") {
+                anyOK = true
+            }
+        }
+        return anyOK
     }
 
-    static func networkServices() -> [String] {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/sbin/networksetup")
-        proc.arguments = ["-listallnetworkservices"]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        proc.standardError = FileHandle.nullDevice
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-        } catch { return [] }
-
-        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+    private static func allServices() -> [String] {
+        let output = shellOutput("-listallnetworkservices")
         return output.components(separatedBy: "\n")
-            .filter { !$0.isEmpty && !$0.hasPrefix("An asterisk") }
+            .filter { !$0.isEmpty && !$0.hasPrefix("An asterisk") && !$0.hasPrefix("*") }
             .map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
@@ -43,5 +44,19 @@ enum SystemProxy {
         } catch {
             return false
         }
+    }
+
+    private static func shellOutput(_ args: String...) -> String {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/sbin/networksetup")
+        proc.arguments = args
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        proc.standardError = FileHandle.nullDevice
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch { return "" }
+        return String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
     }
 }
