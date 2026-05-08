@@ -4,5 +4,11 @@
 <dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>FastNet needs local network access to connect to devices on your network for proxy forwarding.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_fastnet._tcp</string>
+	</array>
 </dict>
 </plist>

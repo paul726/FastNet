@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var server = SOCKS5Server()
     @State private var portText = "1082"
     @State private var loggingEnabled = false
+    @State private var showConnectionTest = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,6 +28,9 @@ struct ContentView: View {
         } message: {
             Text(server.lastError ?? "")
         }
+        .sheet(isPresented: $showConnectionTest) {
+            ConnectionTestView()
+        }
     }
 
     // MARK: - Header
@@ -44,10 +48,10 @@ struct ContentView: View {
             Menu {
                 Toggle("Debug Log", isOn: $loggingEnabled)
                     .onChange(of: loggingEnabled) { server.loggingEnabled = $0 }
+                Button("Connection Test") { showConnectionTest = true }
                 Divider()
                 Link("Privacy Policy", destination: URL(string: "https://github.com/paul726/FastNet/blob/main/PRIVACY.md")!)
                 Link("Terms of Use", destination: URL(string: "https://github.com/paul726/FastNet/blob/main/TERMS.md")!)
-                Link("Support", destination: URL(string: "mailto:pjiang726@gmail.com")!)
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.title3)
